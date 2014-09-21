@@ -16,44 +16,6 @@ public:
   FWTGeoRecoGeometry( void );
   virtual ~FWTGeoRecoGeometry( void );
 
-  struct Info
-  {
-    std::string name;
-    float points[24]; // x1,y1,z1...x8,y8,z8
-    float topology[9]; 
-    Info( const std::string& iname )
-      : name( iname )
-      {
-	init();
-      }
-    Info( void )
-      {
-	init();
-      }
-    void
-    init( void )
-      {
-	for( unsigned int i = 0; i < 24; ++i ) points[i] = 0;
-	for( unsigned int i = 0; i < 9; ++i ) topology[i] = 0;
-      }
-    void
-    fillPoints( std::vector<GlobalPoint>::const_iterator begin, std::vector<GlobalPoint>::const_iterator end )
-      {
-	 unsigned int index( 0 );
-	 for( std::vector<GlobalPoint>::const_iterator i = begin; i != end; ++i )
-	 {
-	    assert( index < 8 );
-	    points[index*3] = i->x();
-	    points[index*3+1] = i->y();
-	    points[index*3+2] = i->z();
-	    ++index;
-	 }
-      }
-  };
-  typedef std::map<unsigned int, FWTGeoRecoGeometry::Info> InfoMap;
-
-  InfoMap idToName;
-  
   TGeoManager* manager( void ) const
     {
       return m_manager;
