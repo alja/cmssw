@@ -720,43 +720,62 @@ FWTGeoRecoGeometryESProducer::addDTGeometry(  )
 
 void
 FWTGeoRecoGeometryESProducer::addCSCGeometry()
-{
-   if(! m_geomRecord->slaveGeometry( CSCDetId()))
-      throw cms::Exception( "FatalError" ) << "Cannnot find CSCGeometry\n";
-
-   
+{   
    TGeoVolume* tv =  GetTopHolder("Muon", kMuonRPC);
    TGeoVolume *assembly = GetDaughter(tv, "CSC", kMuonCSC);
 
-   auto const & cscGeom = m_geomRecord->slaveGeometry( CSCDetId())->dets();
-   for( auto  it = cscGeom.begin(), itEnd = cscGeom.end(); it != itEnd; ++it )
-   {    
-      unsigned int rawid = (*it)->geographicalId();
-      CSCDetId detId(rawid);
-      std::stringstream s;
-      s << "CSC" << detId;
-      std::string name = s.str();
-      
-      TGeoVolume* child = 0;
+    DetId detId( DetId::Muon, 2 ); 
+    const CSCGeometry* cscGeometry = (const CSCGeometry*) m_geomRecord->slaveGeometry( detId );
+    for( auto it = cscGeometry->chambers().begin(),
+             end = cscGeometry->chambers().end(); 
+         it != end; ++it )
+    {
+        const CSCChamber *chamber = *it;
+    
+        if( chamber )
+        {
+            unsigned int rawid = (*it)->geographicalId();
+            CSCDetId detId(rawid);
+            std::stringstream s;
+            s << "CSCChamber" << detId;
+            std::string name = s.str();
 
-      if( auto chamber = dynamic_cast<const CSCChamber*>(*it))
-         child = createVolume( name, chamber, kMuonCSC );
-      else if( auto * layer = dynamic_cast<const CSCLayer*>(*it))
-         child = createVolume( name, layer, kMuonCSC );
+            TGeoVolume* child = createVolume( name, chamber, kMuonCSC );
+            TGeoVolume* holder  = GetDaughter(assembly, "Endcap", kMuonCSC, detId.endcap());
+            holder = GetDaughter(holder, "Station", kMuonCSC, detId.station());
+            holder = GetDaughter(holder, "Ring", kMuonCSC, detId.ring());
+            holder = GetDaughter(holder, "Chamber", kMuonCSC , detId.chamber());
+            AddLeafNode(holder, child, name.c_str(),  createPlacement(*it));
 
+            for( std::vector< const CSCLayer* >::const_iterator lit = chamber->layers().begin(),
+                     lend = chamber->layers().end(); 
+                 lit != lend; ++lit )
+            {
+                const CSCLayer* layer = *lit;
+                if( layer )
+                {
+                    name += "layer ";
+                    name += detId.layer();
+                    AddLeafNode(holder, createVolume( name, layer, kMuonCSC ), name.c_str(),  createPlacement(*it));
+                    
+                    DMtopo par;
+                    const CSCStripTopology* stripTopology = layer->geometry()->topology();
+                    par.push_back( stripTopology->yAxisOrientation());
+                    par.push_back(stripTopology->centreToIntersection());
+                    par.push_back(stripTopology->yCentreOfStripPlane());
+                    par.push_back( stripTopology->phiOfOneEdge());
+                    par.push_back(stripTopology->stripOffset());
+                    par.push_back(stripTopology->angularWidth());
 
+                    const CSCWireTopology* wireTopology = layer->geometry()->wireTopology();
+                    par.push_back(wireTopology->wireSpacing());
+                    par.push_back(wireTopology->wireAngle());
 
-      if (child) {
-         TGeoVolume* holder  = GetDaughter(assembly, "Endcap", kMuonCSC, detId.endcap());
-         holder = GetDaughter(holder, "Station", kMuonCSC, detId.station());
-         holder = GetDaughter(holder, "Ring", kMuonCSC, detId.ring());
-         holder = GetDaughter(holder, "Chamber", kMuonCSC , detId.chamber());
-      
-         //   holder->AddNode(child, 1,  createPlacement( *it ));
-         AddLeafNode(holder, child, name.c_str(),  createPlacement(*it));
-      }
-   }
-
+                    m_topology[par].push_back(rawid);
+                }
+            }
+        }
+    }
 }
 
 //______________________________________________________________________________
