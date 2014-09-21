@@ -636,7 +636,7 @@ FWTGeoRecoGeometryESProducer::addDTGeometry(  )
    TGeoVolume *assemblyTop = GetDaughter(tv, "DT", kMuonDT);
 
    //
-   // DT chambers geometry
+   // DTChambers geometry
    //
    {
       TGeoVolume *assembly = GetDaughter(assemblyTop, "DTChamber", kMuonDT);
@@ -662,7 +662,7 @@ FWTGeoRecoGeometryESProducer::addDTGeometry(  )
       }
    }
 
-   // Fill in DT super layer parameters
+   // Fill in DTSuperLayer parameters
    {
       TGeoVolume *assembly = GetDaughter(assemblyTop, "DTSuperLayer", kMuonDT);
       auto const & dtSuperLayerGeom = m_geomRecord->slaveGeometry( DTSuperLayerId())->dets();
@@ -687,7 +687,7 @@ FWTGeoRecoGeometryESProducer::addDTGeometry(  )
          }
       }
    }
-   // Fill in DT layer parameters
+   // Fill in DTLayer parameters
    {
       TGeoVolume *assembly = GetDaughter(assemblyTop, "DTLayer", kMuonDT);
       auto const & dtLayerGeom = m_geomRecord->slaveGeometry( DTLayerId())->dets();
@@ -712,6 +712,25 @@ FWTGeoRecoGeometryESProducer::addDTGeometry(  )
             holder = GetDaughter(holder, "SuperLayer", kMuonDT, detid.superlayer());
             holder = GetDaughter(holder, "Layer", kMuonDT, detid.layer());
             AddLeafNode(holder, child, name.c_str(),  createPlacement( layer));
+
+            const DTTopology& topo = layer->specificTopology();
+            const BoundPlane& surf = layer->surface();
+            DMtopo par;
+            // Topology W/H/L:
+            par.push_back(topo.cellWidth());
+            par.push_back(topo.cellHeight());
+            par.push_back(topo.cellLenght());
+            par.push_back(topo.firstChannel());
+            par.push_back(topo.lastChannel());
+            par.push_back(topo.channels());
+
+
+            // Bounds W/H/L:
+            par.push_back(surf.bounds().width());
+            par.push_back(surf.bounds().thickness());
+            par.push_back(surf.bounds().length());
+
+            m_topology[par].push_back(detid.rawId());
          }
       } 
    }
@@ -811,6 +830,19 @@ FWTGeoRecoGeometryESProducer::addGEMGeometry()
          holder = GetDaughter(holder, "Chamber", kMuonGEM , detid.chamber()); 
 
          AddLeafNode(holder, child, name.c_str(),  createPlacement(*it));
+
+         DMtopo par;
+         const StripTopology& topo = roll->specificTopology();
+         par.push_back(topo.nstrips());
+         par.push_back(topo.stripLength());
+         par.push_back(topo.pitch());
+
+         float height = topo.stripLength()/2;
+         LocalPoint  lTop( 0., height, 0.);
+         LocalPoint  lBottom( 0., -height, 0.);
+         par.push_back(roll->localPitch(lTop));
+         par.push_back(roll->localPitch(lBottom));
+         par.push_back(roll->npads());
       }
    }
 }
