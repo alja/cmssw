@@ -7,6 +7,7 @@
 # include "FWCore/Framework/interface/ESHandle.h"
 # include "DataFormats/GeometryVector/interface/GlobalPoint.h"
 
+
 namespace edm
 {
    class ParameterSet;
@@ -25,6 +26,8 @@ class TGeoMaterial;
 class TGeoMedium;
 class GeomDet;
 class CaloCellGeometry;
+class DetId;
+
 class FWTGeoRecoGeometryESProducer : public edm::ESProducer
 {
    enum ERecoDet  {kDummy, 
@@ -53,6 +56,9 @@ private:
 
    TGeoMedium* GetMedium(ERecoDet);
 
+   void addPixelTopology(DetId&);
+   void addStripTopology(DetId&);
+
    void addPixelBarrelGeometry();
    void addPixelForwardGeometry();
    void addTIBGeometry();
@@ -76,6 +82,10 @@ private:
    const TrackerGeometry* m_trackerGeom;
   
    boost::shared_ptr<FWTGeoRecoGeometry> m_fwGeometry;
+
+   typedef std::vector<float>        DMtopo;
+   typedef std::vector<unsigned int> DMids;
+   std::map<DMtopo, DMids>           m_topology;
 
    TGeoMedium* m_dummyMedium;
 };

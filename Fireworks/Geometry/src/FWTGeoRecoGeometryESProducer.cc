@@ -399,6 +399,58 @@ FWTGeoRecoGeometryESProducer::createVolume( const std::string& name, const GeomD
 //////////////////////////////////////////////////////////////////////////////////
 
 
+//______________________________________________________________________________
+void
+FWTGeoRecoGeometryESProducer::addPixelTopology(DetId& detid)
+{
+
+  const PixelGeomDetUnit* det = dynamic_cast<const PixelGeomDetUnit*>(  m_trackerGeom->idToDetUnit( detid )); 
+  if( det )							
+  {      							
+    const PixelTopology* topo = &det->specificTopology();
+    DMtopo par;
+    par.push_back(topo->nrows());
+    par.push_back(topo->ncolumns());
+    m_topology[par].push_back(detid.rawId());
+  }
+}
+
+//______________________________________________________________________________
+void
+FWTGeoRecoGeometryESProducer::addStripTopology(DetId& detid)
+{
+    const StripGeomDetUnit* det = dynamic_cast<const StripGeomDetUnit*>( m_trackerGeom->idToDetUnit( detid )); 
+    if( det )                                                     
+    {     
+        DMtopo par;                                                        
+        const StripTopology* topo = dynamic_cast<const StripTopology*>( &det->specificTopology() );
+        par.push_back(0);
+        par.push_back(topo->nstrips());
+        par.push_back(topo->stripLength());
+        if( const RadialStripTopology* rtop = dynamic_cast<const RadialStripTopology*>( &(det->specificType().specificTopology()) ) )
+        {									
+            par[0] = 1;
+            par.push_back(rtop->yAxisOrientation());
+            par.push_back(rtop->originToIntersection());
+            par.push_back(rtop->phiOfOneEdge());
+            par.push_back(rtop->angularWidth());
+        }                                                                   
+        else if( dynamic_cast<const RectangularStripTopology*>( &(det->specificType().specificTopology()) ) )     
+        {     
+            par[0] = 2;                                                              
+            par.push_back(topo->pitch());
+        }									
+        else if( dynamic_cast<const TrapezoidalStripTopology*>( &(det->specificType().specificTopology()) ) )     
+        {     
+            par[0] = 3;                                                              
+            par.push_back(topo->pitch());	
+        }
+
+        m_topology[par].push_back(detid.rawId());							
+    }
+}
+
+//______________________________________________________________________________
 void
 FWTGeoRecoGeometryESProducer::addPixelBarrelGeometry()
 {
@@ -420,9 +472,9 @@ FWTGeoRecoGeometryESProducer::addPixelBarrelGeometry()
        holder = GetDaughter(holder, "Module", kSiPixel, xx.module());
                                  
        AddLeafNode(holder, child, name.c_str(), createPlacement( *it ));
-   }
-  
 
+       addPixelTopology(detid);
+   }
 }
 //______________________________________________________________________________
 
@@ -450,11 +502,10 @@ FWTGeoRecoGeometryESProducer::addPixelForwardGeometry()
       holder = GetDaughter(holder, "Blade", kSiPixel, detid.blade());
       holder = GetDaughter(holder, "Panel", kSiPixel, detid.panel());
    
-      // holder->AddNode( child, 1, createPlacement( *it ));
       AddLeafNode(holder, child, name.c_str(),  createPlacement( *it ));
 
+      addPixelTopology(detid);
    }
-  
 }
 
 //______________________________________________________________________________
@@ -481,6 +532,8 @@ FWTGeoRecoGeometryESProducer::addTIBGeometry()
       holder = GetDaughter(holder, "Order", kSiStrip, detid.order());
       holder = GetDaughter(holder, "Side", kSiStrip, detid.side());
       AddLeafNode(holder, child, name.c_str(),  createPlacement( *it ));
+
+      addStripTopology(detid);
    }
 }
 
@@ -507,6 +560,8 @@ FWTGeoRecoGeometryESProducer::addTIDGeometry()
       holder = GetDaughter(holder, "Wheel", kSiStrip, detid.wheel());
       holder = GetDaughter(holder, "Ring", kSiStrip, detid.ring());
       AddLeafNode(holder, child, name.c_str(),  createPlacement( *it ));
+
+      addStripTopology(detid);
    }
 }
 
@@ -532,6 +587,8 @@ FWTGeoRecoGeometryESProducer::addTOBGeometry()
       holder = GetDaughter(holder, "Side", kSiStrip, detid.side());
       holder = GetDaughter(holder, "Module", kSiStrip, detid.moduleNumber());
       AddLeafNode(holder, child, name.c_str(),  createPlacement( *it ));
+
+      addStripTopology(detid);
    }
 
 }
@@ -560,6 +617,8 @@ FWTGeoRecoGeometryESProducer::addTECGeometry()
       holder = GetDaughter(holder, "Ring", kSiStrip, detid.ring());
       holder = GetDaughter(holder, "Module", kSiStrip, detid.module());
       AddLeafNode(holder, child, name.c_str(),  createPlacement( *it ));
+
+      addStripTopology(detid);
    }
 }
 
