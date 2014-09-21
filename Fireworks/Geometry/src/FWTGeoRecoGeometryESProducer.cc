@@ -848,6 +848,13 @@ FWTGeoRecoGeometryESProducer::addRPCGeometry( )
          holder = GetDaughter(holder, "Subsector", kMuonRPC, detid.subsector()); 
  
          AddLeafNode(holder, child, name.c_str(),  createPlacement(*it));
+
+         DMtopo par;
+         const StripTopology& topo = roll->specificTopology();
+         par.push_back(topo.nstrips());
+         par.push_back(topo.stripLength());
+         par.push_back(topo.pitch());
+         m_topology[par].push_back(detid.rawId());
       }
    };
 }
