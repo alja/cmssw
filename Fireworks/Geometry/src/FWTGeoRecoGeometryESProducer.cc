@@ -72,11 +72,12 @@ FWTGeoRecoGeometryESProducer::~FWTGeoRecoGeometryESProducer( void )
 namespace
 {
 
-void AddLeafNode(TGeoVolume* mother, TGeoVolume* daughter, const char* name, TGeoMatrix* mtx )
+void AddLeafNode(TGeoVolume* mother, TGeoVolume* daughter, const char* name, TGeoMatrix* mtx , unsigned int rawid)
 {
    int n = mother->GetNdaughters();
    mother->AddNode(daughter, 1, mtx);
    mother->GetNode(n)->SetName(name);
+   mother->GetNode(n)->SetTitle(Form("%d", rawid));
 }
 
   /** Create TGeo transformation of GeomDet */
@@ -270,25 +271,25 @@ FWTGeoRecoGeometryESProducer::produce( const FWTGeoRecoGeometryRecord& record )
    addDTGeometry();
    addCSCGeometry();
    addRPCGeometry();
-   try {
-      addGEMGeometry();
-   }
-   catch ( cms::Exception& exception ) {
-      edm::LogWarning("FWRecoGeometryProducerException")
-         << "addGEMGeometry() Exception caught while building GEM geometry: " << exception.what()
-         << std::endl; 
-   }
+   addGEMGeometry();
 
-
+ 
+   if (0) {
    addEcalCaloGeometry();
    
    addHcalCaloGeometryBarrel();
    addHcalCaloGeometryEndcap();
+   }
 
    geom->CloseGeometry();
-
    geom->DefaultColors();
    geom->CloseGeometry();
+
+  printf("AMT tracker topologies %lu volumes %d nodes %d \n",  m_topology.size(),
+          gGeoManager->GetListOfShapes()->GetLast(), gGeoManager->GetNNodes());
+
+   for (std::map<DMtopo, DMids>::iterator t =  m_topology.begin(); t != m_topology.end(); ++t)
+       printf("num raws = %lu \n", t->second.size());
 
    return m_fwGeometry;
 }
@@ -471,7 +472,7 @@ FWTGeoRecoGeometryESProducer::addPixelBarrelGeometry()
        TGeoVolume* holder  = GetDaughter(assembly, "Layer", kSiPixel, xx.layer());
        holder = GetDaughter(holder, "Module", kSiPixel, xx.module());
                                  
-       AddLeafNode(holder, child, name.c_str(), createPlacement( *it ));
+       AddLeafNode(holder, child, name.c_str(), createPlacement( *it ), rawid);
 
        addPixelTopology(detid);
    }
@@ -502,7 +503,7 @@ FWTGeoRecoGeometryESProducer::addPixelForwardGeometry()
       holder = GetDaughter(holder, "Blade", kSiPixel, detid.blade());
       holder = GetDaughter(holder, "Panel", kSiPixel, detid.panel());
    
-      AddLeafNode(holder, child, name.c_str(),  createPlacement( *it ));
+      AddLeafNode(holder, child, name.c_str(),  createPlacement( *it ), detid.rawId());
 
       addPixelTopology(detid);
    }
@@ -531,7 +532,7 @@ FWTGeoRecoGeometryESProducer::addTIBGeometry()
       TGeoVolume* holder  = GetDaughter(assembly, "Module", kSiStrip, detid.module());
       holder = GetDaughter(holder, "Order", kSiStrip, detid.order());
       holder = GetDaughter(holder, "Side", kSiStrip, detid.side());
-      AddLeafNode(holder, child, name.c_str(),  createPlacement( *it ));
+      AddLeafNode(holder, child, name.c_str(),  createPlacement( *it ), detid.rawId());
 
       addStripTopology(detid);
    }
@@ -559,7 +560,7 @@ FWTGeoRecoGeometryESProducer::addTIDGeometry()
       TGeoVolume* holder  = GetDaughter(assembly, "Side", kSiStrip, detid.side());
       holder = GetDaughter(holder, "Wheel", kSiStrip, detid.wheel());
       holder = GetDaughter(holder, "Ring", kSiStrip, detid.ring());
-      AddLeafNode(holder, child, name.c_str(),  createPlacement( *it ));
+      AddLeafNode(holder, child, name.c_str(),  createPlacement( *it ), detid.rawId());
 
       addStripTopology(detid);
    }
@@ -586,7 +587,7 @@ FWTGeoRecoGeometryESProducer::addTOBGeometry()
       TGeoVolume* holder  = GetDaughter(assembly, "Rod", kSiStrip, detid.rodNumber());
       holder = GetDaughter(holder, "Side", kSiStrip, detid.side());
       holder = GetDaughter(holder, "Module", kSiStrip, detid.moduleNumber());
-      AddLeafNode(holder, child, name.c_str(),  createPlacement( *it ));
+      AddLeafNode(holder, child, name.c_str(),  createPlacement( *it ), detid.rawId());
 
       addStripTopology(detid);
    }
@@ -616,7 +617,7 @@ FWTGeoRecoGeometryESProducer::addTECGeometry()
       TGeoVolume* holder  = GetDaughter(assembly, "Order", kSiStrip, detid.order());
       holder = GetDaughter(holder, "Ring", kSiStrip, detid.ring());
       holder = GetDaughter(holder, "Module", kSiStrip, detid.module());
-      AddLeafNode(holder, child, name.c_str(),  createPlacement( *it ));
+      AddLeafNode(holder, child, name.c_str(),  createPlacement( *it ), detid.rawId());
 
       addStripTopology(detid);
    }
@@ -657,7 +658,7 @@ FWTGeoRecoGeometryESProducer::addDTGeometry(  )
             holder = GetDaughter(holder, "Station", kMuonDT, detid.station());
             holder = GetDaughter(holder, "Sector", kMuonDT, detid.sector());
    
-            AddLeafNode(holder, child, name.c_str(),  createPlacement( chamber));
+            AddLeafNode(holder, child, name.c_str(),  createPlacement( chamber), detid.rawId());
          }
       }
    }
@@ -683,7 +684,7 @@ FWTGeoRecoGeometryESProducer::addDTGeometry(  )
             holder = GetDaughter(holder, "Station", kMuonDT, detid.station());
             holder = GetDaughter(holder, "Sector", kMuonDT, detid.sector());
             holder = GetDaughter(holder, "SuperLayer", kMuonDT, detid.superlayer());
-            AddLeafNode(holder, child, name.c_str(),  createPlacement( superlayer));
+            AddLeafNode(holder, child, name.c_str(),  createPlacement( superlayer), detid.rawId());
          }
       }
    }
@@ -711,7 +712,7 @@ FWTGeoRecoGeometryESProducer::addDTGeometry(  )
             holder = GetDaughter(holder, "Sector", kMuonDT, detid.sector());
             holder = GetDaughter(holder, "SuperLayer", kMuonDT, detid.superlayer());
             holder = GetDaughter(holder, "Layer", kMuonDT, detid.layer());
-            AddLeafNode(holder, child, name.c_str(),  createPlacement( layer));
+            AddLeafNode(holder, child, name.c_str(),  createPlacement( layer), detid.rawId());
 
             const DTTopology& topo = layer->specificTopology();
             const BoundPlane& surf = layer->surface();
@@ -735,6 +736,7 @@ FWTGeoRecoGeometryESProducer::addDTGeometry(  )
       } 
    }
 }
+
 //______________________________________________________________________________
 
 void
@@ -743,58 +745,59 @@ FWTGeoRecoGeometryESProducer::addCSCGeometry()
    TGeoVolume* tv =  GetTopHolder("Muon", kMuonRPC);
    TGeoVolume *assembly = GetDaughter(tv, "CSC", kMuonCSC);
 
-    DetId detId( DetId::Muon, 2 ); 
-    const CSCGeometry* cscGeometry = (const CSCGeometry*) m_geomRecord->slaveGeometry( detId );
-    for( auto it = cscGeometry->chambers().begin(),
-             end = cscGeometry->chambers().end(); 
-         it != end; ++it )
-    {
-        const CSCChamber *chamber = *it;
+   DetId detId( DetId::Muon, 2 ); 
+   const CSCGeometry* cscGeometry = (const CSCGeometry*) m_geomRecord->slaveGeometry( detId );
+   for( auto it = cscGeometry->chambers().begin(),
+           end = cscGeometry->chambers().end(); 
+        it != end; ++it )
+   {
+      const CSCChamber *chamber = *it;
     
-        if( chamber )
-        {
-            unsigned int rawid = (*it)->geographicalId();
-            CSCDetId detId(rawid);
-            std::stringstream s;
-            s << "CSCChamber" << detId;
-            std::string name = s.str();
+      if( chamber )
+      {
+         unsigned int rawid = (*it)->geographicalId();
+         CSCDetId detId(rawid);
+         std::stringstream s;
+         s << "CSCChamber" << detId;
+         std::string name = s.str();
 
-            TGeoVolume* child = createVolume( name, chamber, kMuonCSC );
-            TGeoVolume* holder  = GetDaughter(assembly, "Endcap", kMuonCSC, detId.endcap());
-            holder = GetDaughter(holder, "Station", kMuonCSC, detId.station());
-            holder = GetDaughter(holder, "Ring", kMuonCSC, detId.ring());
-            holder = GetDaughter(holder, "Chamber", kMuonCSC , detId.chamber());
-            AddLeafNode(holder, child, name.c_str(),  createPlacement(*it));
+         TGeoVolume* child = createVolume( name, chamber, kMuonCSC );
+         TGeoVolume* holder  = GetDaughter(assembly, "Endcap", kMuonCSC, detId.endcap());
+         holder = GetDaughter(holder, "Station", kMuonCSC, detId.station());
+         holder = GetDaughter(holder, "Ring", kMuonCSC, detId.ring());
+         holder = GetDaughter(holder, "Chamber", kMuonCSC , detId.chamber());
+         AddLeafNode(holder, child, name.c_str(),  createPlacement(*it), detId.rawId());
 
-            for( std::vector< const CSCLayer* >::const_iterator lit = chamber->layers().begin(),
-                     lend = chamber->layers().end(); 
-                 lit != lend; ++lit )
+         for( std::vector< const CSCLayer* >::const_iterator lit = chamber->layers().begin(),
+                 lend = chamber->layers().end(); 
+              lit != lend; ++lit )
+         {
+            const CSCLayer* layer = *lit;
+            if( layer )
             {
-                const CSCLayer* layer = *lit;
-                if( layer )
-                {
-                    name += "layer ";
-                    name += detId.layer();
-                    AddLeafNode(holder, createVolume( name, layer, kMuonCSC ), name.c_str(),  createPlacement(*it));
+               name += "layer ";
+               name += detId.layer();
+               AddLeafNode(holder, createVolume( name, layer, kMuonCSC ), name.c_str(), 
+                           createPlacement(*it), layer->geographicalId());
                     
-                    DMtopo par;
-                    const CSCStripTopology* stripTopology = layer->geometry()->topology();
-                    par.push_back( stripTopology->yAxisOrientation());
-                    par.push_back(stripTopology->centreToIntersection());
-                    par.push_back(stripTopology->yCentreOfStripPlane());
-                    par.push_back( stripTopology->phiOfOneEdge());
-                    par.push_back(stripTopology->stripOffset());
-                    par.push_back(stripTopology->angularWidth());
+               DMtopo par;
+               const CSCStripTopology* stripTopology = layer->geometry()->topology();
+               par.push_back( stripTopology->yAxisOrientation());
+               par.push_back(stripTopology->centreToIntersection());
+               par.push_back(stripTopology->yCentreOfStripPlane());
+               par.push_back( stripTopology->phiOfOneEdge());
+               par.push_back(stripTopology->stripOffset());
+               par.push_back(stripTopology->angularWidth());
 
-                    const CSCWireTopology* wireTopology = layer->geometry()->wireTopology();
-                    par.push_back(wireTopology->wireSpacing());
-                    par.push_back(wireTopology->wireAngle());
+               const CSCWireTopology* wireTopology = layer->geometry()->wireTopology();
+               par.push_back(wireTopology->wireSpacing());
+               par.push_back(wireTopology->wireAngle());
 
-                    m_topology[par].push_back(rawid);
-                }
+               m_topology[par].push_back(rawid);
             }
-        }
-    }
+         }
+      }
+   }
 }
 
 //______________________________________________________________________________
@@ -802,49 +805,56 @@ FWTGeoRecoGeometryESProducer::addCSCGeometry()
 void
 FWTGeoRecoGeometryESProducer::addGEMGeometry()
 { 
-  
-   DetId detId( DetId::Muon, MuonSubdetId::GEM );
-   const GEMGeometry* gemGeom = (const GEMGeometry*) m_geomRecord->slaveGeometry( detId );
+    try {
+        DetId detId( DetId::Muon, MuonSubdetId::GEM );
+        const GEMGeometry* gemGeom = (const GEMGeometry*) m_geomRecord->slaveGeometry( detId );
 
-   TGeoVolume* tv =  GetTopHolder("Muon", kMuonRPC);
-   TGeoVolume *assembly = GetDaughter(tv, "GEM", kMuonGEM);
+        TGeoVolume* tv =  GetTopHolder("Muon", kMuonRPC);
+        TGeoVolume *assembly = GetDaughter(tv, "GEM", kMuonGEM);
 
-   for( auto it = gemGeom->etaPartitions().begin(),
-	   end = gemGeom->etaPartitions().end(); 
-        it != end; ++it )
-   {
-      const GEMEtaPartition* roll = (*it);
-      if( roll )
-      {
-         GEMDetId detid = roll->geographicalId();
-         std::stringstream s;
-         s << detid;
-         std::string name = s.str();
+        for( auto it = gemGeom->etaPartitions().begin(),
+                 end = gemGeom->etaPartitions().end(); 
+             it != end; ++it )
+        {
+            const GEMEtaPartition* roll = (*it);
+            if( roll )
+            {
+                GEMDetId detid = roll->geographicalId();
+                std::stringstream s;
+                s << detid;
+                std::string name = s.str();
       
-         TGeoVolume* child = createVolume( name, roll, kMuonGEM );
+                TGeoVolume* child = createVolume( name, roll, kMuonGEM );
 
-         TGeoVolume* holder  = GetDaughter(assembly, "ROLL Region", kMuonGEM , detid.region());
-         holder = GetDaughter(holder, "Ring", kMuonGEM , detid.ring());
-         holder = GetDaughter(holder, "Station", kMuonGEM , detid.station()); 
-         holder = GetDaughter(holder, "Layer", kMuonGEM , detid.layer()); 
-         holder = GetDaughter(holder, "Chamber", kMuonGEM , detid.chamber()); 
+                TGeoVolume* holder  = GetDaughter(assembly, "ROLL Region", kMuonGEM , detid.region());
+                holder = GetDaughter(holder, "Ring", kMuonGEM , detid.ring());
+                holder = GetDaughter(holder, "Station", kMuonGEM , detid.station()); 
+                holder = GetDaughter(holder, "Layer", kMuonGEM , detid.layer()); 
+                holder = GetDaughter(holder, "Chamber", kMuonGEM , detid.chamber()); 
 
-         AddLeafNode(holder, child, name.c_str(),  createPlacement(*it));
+                AddLeafNode(holder, child, name.c_str(),  createPlacement(*it), detid.rawId());
 
-         DMtopo par;
-         const StripTopology& topo = roll->specificTopology();
-         par.push_back(topo.nstrips());
-         par.push_back(topo.stripLength());
-         par.push_back(topo.pitch());
+                DMtopo par;
+                const StripTopology& topo = roll->specificTopology();
+                par.push_back(topo.nstrips());
+                par.push_back(topo.stripLength());
+                par.push_back(topo.pitch());
 
-         float height = topo.stripLength()/2;
-         LocalPoint  lTop( 0., height, 0.);
-         LocalPoint  lBottom( 0., -height, 0.);
-         par.push_back(roll->localPitch(lTop));
-         par.push_back(roll->localPitch(lBottom));
-         par.push_back(roll->npads());
-      }
-   }
+                float height = topo.stripLength()/2;
+                LocalPoint  lTop( 0., height, 0.);
+                LocalPoint  lBottom( 0., -height, 0.);
+                par.push_back(roll->localPitch(lTop));
+                par.push_back(roll->localPitch(lBottom));
+                par.push_back(roll->npads());
+            }
+        }
+    }
+    catch ( cms::Exception& exception ) {
+        edm::LogWarning("FWRecoGeometryProducerException")
+           << "addGEMGeometry() Exception caught while building GEM geometry: ";// << exception.what()
+            << std::endl; 
+    }
+
 }
 
 //______________________________________________________________________________
@@ -879,7 +889,7 @@ FWTGeoRecoGeometryESProducer::addRPCGeometry( )
          holder = GetDaughter(holder, "Layer", kMuonRPC, detid.layer()); 
          holder = GetDaughter(holder, "Subsector", kMuonRPC, detid.subsector()); 
  
-         AddLeafNode(holder, child, name.c_str(),  createPlacement(*it));
+         AddLeafNode(holder, child, name.c_str(),  createPlacement(*it), detid.rawId());
 
          DMtopo par;
          const StripTopology& topo = roll->specificTopology();
@@ -985,7 +995,7 @@ FWTGeoRecoGeometryESProducer::addHcalCaloGeometryBarrel( void )
       holder = GetDaughter(holder, "ieta", kHCal, detid.ieta());
       std::stringstream nname;
       nname << detid;
-      AddLeafNode(holder, volume, nname.str().c_str(), new TGeoCombiTrans(gtr, rot));
+      AddLeafNode(holder, volume, nname.str().c_str(), new TGeoCombiTrans(gtr, rot), detid.rawId());
    }
 
 
@@ -1067,7 +1077,7 @@ FWTGeoRecoGeometryESProducer::addHcalCaloGeometryEndcap( void )
       holder = GetDaughter(holder, "ieta", kHCal, detid.ieta());
       std::stringstream nname;
       nname << detid;
-      AddLeafNode(holder, volume, nname.str().c_str(), new TGeoCombiTrans(gtr, rot));
+      AddLeafNode(holder, volume, nname.str().c_str(), new TGeoCombiTrans(gtr, rot), detid.rawId());
    }
 
    //   printf("HE map size P = %lu , N = %lu", caloShapeMapP.size(),caloShapeMapN.size() );
@@ -1176,7 +1186,7 @@ FWTGeoRecoGeometryESProducer::addEcalCaloGeometry( void )
          holder = GetDaughter(holder, "ieta", kECal, detid.ieta());
          std::stringstream nname;
          nname << detid;
-         AddLeafNode(holder, volume, nname.str().c_str(), mtx);
+         AddLeafNode(holder, volume, nname.str().c_str(), mtx, detid.rawId());
       }
    }
    
@@ -1207,7 +1217,7 @@ FWTGeoRecoGeometryESProducer::addEcalCaloGeometry( void )
          holder = GetDaughter(holder, "ix", kECal, detid.ix());
          std::stringstream nname;
          nname << detid;
-         AddLeafNode(holder, volume, nname.str().c_str(), mtx);
+         AddLeafNode(holder, volume, nname.str().c_str(), mtx, detid.rawId());
       }
    }
 }
