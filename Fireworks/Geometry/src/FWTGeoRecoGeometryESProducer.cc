@@ -852,7 +852,6 @@ FWTGeoRecoGeometryESProducer::addGEMGeometry()
     catch ( cms::Exception& exception ) {
         edm::LogWarning("FWRecoGeometryProducerException")
            << "addGEMGeometry() Exception caught while building GEM geometry: ";// << exception.what()
-            << std::endl; 
     }
 
 }
