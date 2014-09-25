@@ -12,6 +12,8 @@ class TGeoVolume;
 class TGeoShape;
 class TFile;
 class TObjArray;
+class TGeoManager;
+class TGeoNode;
 
 #include "TEveVSDStructs.h"
 #include "TGeoMatrix.h"
@@ -81,12 +83,18 @@ public:
    // get reco topology/parameters
    const float* getParameters( unsigned int id ) const;
 
+   void recursiveImportVolume(const TGeoVolume*);
+
    void localToGlobal( unsigned int id, const float* local,  float* global, bool translatep=true ) const;
    void localToGlobal( unsigned int id, const float* local1, float* global1, const float* local2, float* global2, bool translatep=true ) const;
 
    struct GeomDetInfo
    {
+      GeomDetInfo(unsigned int iId, TGeoNode* iNode): id(iId), node(iNode) {};
+
       unsigned int id;       // DetId
+      TGeoNode*    node;
+
       float points[24];      // 3*8 x,y,z points defining its shape (can be undefined, e.g. 0s) 
       float parameters[9];   // specific DetId dependent parameters, e.g. topology (can be undefined, e.g. 0s)
       float shape[5];        // shape description: 0 - shape type, For Trap: 1 - dx1, 2 - dx2, 3 - dz, 4 - dy1; for Box: dx, dy, dz (can be undefined, e.g. 0s) 
@@ -110,22 +118,19 @@ public:
      return FWGeometry::find( id ) != m_idToInfo.end();
    }
 
-   void clear( void ) { m_idToInfo.clear(); m_idToMatrix.clear(); }
+   void clear( void ) { m_idToInfo.clear(); }
    IdToInfoItr find( unsigned int ) const;
    void localToGlobal( const GeomDetInfo& info, const float* local, float* global, bool translatep=true ) const;
 
    const VersionInfo& versionInfo() const { return m_versionInfo; }
 
 private:
-   mutable std::map<unsigned int, TGeoMatrix*> m_idToMatrix;
-
-   IdToInfo m_idToInfo;
-
-   std::string m_prodTag;
+   TGeoManager* m_geoManager;
 
    VersionInfo  m_versionInfo;
+   IdToInfo     m_idToInfo;
 
-   TGeoShape* getShape( const GeomDetInfo& info ) const;
+   TGeoShape*   getShape( const GeomDetInfo& info ) const;
 };
 
 #endif
