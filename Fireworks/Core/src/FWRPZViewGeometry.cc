@@ -15,6 +15,7 @@
 #include <cassert>
 
 // user include files
+#include "TGeoNode.h"
 #include "TGeoBBox.h"
 
 #include "TEveElement.h"
@@ -283,9 +284,10 @@ FWRPZViewGeometry::estimateProjectionSizeDT( const FWGeometry::GeomDetInfo& info
    // we will test 5 points on both sides ( +/- z)
    float local[3], global[3];
 
-   float dX = info.shape[1];
-   float dY = info.shape[2];
-   float dZ = info.shape[3];
+   TGeoBBox* bb = (TGeoBBox*)info.node->GetVolume()->GetShape();
+   float dX = bb->GetDX();
+   float dY = bb->GetDY();
+   float dZ = bb->GetDZ();
 
    local[0] = 0; local[1] = 0; local[2] = dZ;
    m_geom->localToGlobal( info, local, global );
