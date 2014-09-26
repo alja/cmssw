@@ -9,6 +9,7 @@
 #include "TGeoManager.h"
 #include "TGeoVolume.h"
 #include "TGeoNode.h"
+#include "TGeoMatrix.h"
 
 #include "Fireworks/Core/interface/FWGeometry.h"
 #include "Fireworks/Core/interface/fwLog.h"
@@ -19,6 +20,9 @@
 #include <sstream>
 #include <stdexcept>
 #include <algorithm>
+
+#include "boost/lexical_cast.hpp"
+
 
 FWGeometry::FWGeometry( void )
 {}
@@ -49,21 +53,41 @@ FWGeometry::findFile( const char* fileName )
    return fp ? TFile::Open( fp) : 0;
 }
 
+//______________________________________________________________________________
 
 void FWGeometry::recursiveImportVolume(const TGeoVolume* mother)
 {
-    int n = mother->GetNdaughters();
-    for (int i = 0; i < n; ++i)
-    {
-        TGeoNode* node = mother->GetNode(i);
-        std::string title = node->GetTitle();
-        if ( !title.empty() ) {
-            int rawid = std::stoi(title);
+   using boost::lexical_cast;
+   using boost::bad_lexical_cast;
+   int n = mother->GetNdaughters();
+   for (int i = 0; i < n; ++i)
+   {
+      TGeoNode* node = mother->GetNode(i);
+      std::string title = node->GetTitle();
+      if (!title.empty()) {
+         try {
+            unsigned int rawid = lexical_cast<unsigned int>(title);
             m_idToInfo.push_back(GeomDetInfo(rawid, node));
+            // printf("importr %u == %s\n", rawid, node->GetTitle());
+         }
+         catch (bad_lexical_cast &e) {
+            fwLog(fwlog::kError) << "import [" << title << "] " << e.what() <<std::endl;
+            // assert(false);
+         }
+      }
+      recursiveImportVolume(node->GetVolume());
+   }
 
-        }
-        recursiveImportVolume(node->GetVolume());
-    }
+}
+
+namespace {
+   struct less_than_key
+   {
+      inline bool operator() (const FWGeometry::GeomDetInfo& struct1, const FWGeometry::GeomDetInfo& struct2)
+      {
+         return (struct1.id < struct2.id);
+      }
+   };
 }
 
 void
@@ -78,26 +102,32 @@ FWGeometry::loadMap( const char* fileName )
 
    m_geoManager = (TGeoManager*) file->Get("cmsGeo;1");
    recursiveImportVolume(m_geoManager->GetTopVolume());
-   
+
+
+
+   std::sort(m_idToInfo.begin(), m_idToInfo.end(), less_than_key());
+
   
-   TString path = file->GetPath();
-   if (path.EndsWith(":/"))  path.Resize(path.Length() -2);
-
-
    file->Close();
 }
+
 
 void
 FWGeometry::initMap( const FWRecoGeom::InfoMap& map )
 {
 }
+//______________________________________________________________________________
+
+
 
 const TGeoMatrix*
 FWGeometry::getMatrix( unsigned int id ) const
 {
-   // AMT
-   return 0;
+   assert(false);   return 0;
 }
+
+//______________________________________________________________________________
+
 
 std::vector<unsigned int>
 FWGeometry::getMatchedIds( Detector det, SubDetector subdet ) const
@@ -114,6 +144,8 @@ FWGeometry::getMatchedIds( Detector det, SubDetector subdet ) const
    return ids;
 }
 
+//______________________________________________________________________________
+
 TGeoShape*
 FWGeometry::getShape( unsigned int id ) const
 {
@@ -129,31 +161,17 @@ FWGeometry::getShape( unsigned int id ) const
    }
 }
 
+
+
 TGeoShape*
 FWGeometry::getShape( const GeomDetInfo& info ) const 
 {
-   TEveGeoManagerHolder gmgr( TEveGeoShape::GetGeoMangeur());
-   TGeoShape* geoShape = 0;
-   if( info.shape[0] == 1 ) 
-   {
-      geoShape = new TGeoTrap(
-	 info.shape[3], //dz
-	 0,             //theta
-	 0,             //phi
-	 info.shape[4], //dy1
-	 info.shape[1], //dx1
-	 info.shape[2], //dx2
-	 0,             //alpha1
-	 info.shape[4], //dy2
-	 info.shape[1], //dx3
-	 info.shape[2], //dx4
-	 0);            //alpha2
-   }
-   else
-      geoShape = new TGeoBBox( info.shape[1], info.shape[2], info.shape[3] );
-      
-   return geoShape;
+   return info.node->GetVolume()->GetShape();
 }
+
+//______________________________________________________________________________
+
+
 
 TEveGeoShape*
 FWGeometry::getEveShape( unsigned int id  ) const
@@ -167,20 +185,17 @@ FWGeometry::getEveShape( unsigned int id  ) const
    else
    {
       const GeomDetInfo& info = *it;
-      double array[16] = { info.matrix[0], info.matrix[3], info.matrix[6], 0.,
-			   info.matrix[1], info.matrix[4], info.matrix[7], 0.,
-			   info.matrix[2], info.matrix[5], info.matrix[8], 0.,
-			   info.translation[0], info.translation[1], info.translation[2], 1.
-      };
-      TEveGeoManagerHolder gmgr( TEveGeoShape::GetGeoMangeur());
       TEveGeoShape* shape = new TEveGeoShape(TString::Format("RecoGeom Id=%u", id));
       TGeoShape* geoShape = getShape( info );
       shape->SetShape( geoShape );
       // Set transformation matrix from a column-major array
-      shape->SetTransMatrix( array );
+      shape->SetTransMatrix( *info.node->GetMatrix() );
       return shape;
    }
 }
+
+//______________________________________________________________________________
+
 
 const float*
 FWGeometry::getCorners( unsigned int id ) const
@@ -197,6 +212,8 @@ FWGeometry::getCorners( unsigned int id ) const
       return ( *it ).points;
    }
 }
+//______________________________________________________________________________
+
 
 const float*
 FWGeometry::getParameters( unsigned int id ) const
@@ -214,21 +231,8 @@ FWGeometry::getParameters( unsigned int id ) const
    }
 }
 
-const float*
-FWGeometry::getShapePars( unsigned int id ) const
-{
-   // reco geometry parameters
-   IdToInfoItr it = FWGeometry::find( id );
-   if( it == m_idToInfo.end())
-   {
-      fwLog( fwlog::kWarning ) << "no reco geometry found for id " <<  id << std::endl;
-      return 0;
-   }
-   else
-   {
-      return ( *it ).shape;
-   }
-}
+//______________________________________________________________________________
+
 
 void
 FWGeometry::localToGlobal( unsigned int id, const float* local, float* global, bool translatep ) const
@@ -260,24 +264,30 @@ FWGeometry::localToGlobal( unsigned int id, const float* local1, float* global1,
    }
 }
 
+
+void
+FWGeometry::localToGlobal( const GeomDetInfo& info, const float* local, float* global, bool translatep ) const
+{
+   const Double_t* translation = info.node->GetMatrix()->GetTranslation();
+   const Double_t* rotation    = info.node->GetMatrix()->GetRotationMatrix();
+
+   for( int i = 0; i < 3; ++i )
+   {
+      global[i]  = translatep ? translation[i] : 0;
+      global[i] +=   local[0] * rotation[3 * i]
+		   + local[1] * rotation[3 * i + 1]
+		   + local[2] * rotation[3 * i + 2];
+   }
+}
+
+//______________________________________________________________________________
+
 FWGeometry::IdToInfoItr
 FWGeometry::find( unsigned int id ) const
 {
   FWGeometry::IdToInfoItr begin = m_idToInfo.begin();
   FWGeometry::IdToInfoItr end = m_idToInfo.end();
   return std::lower_bound( begin, end, id );
-}
-
-void
-FWGeometry::localToGlobal( const GeomDetInfo& info, const float* local, float* global, bool translatep ) const
-{
-   for( int i = 0; i < 3; ++i )
-   {
-      global[i]  = translatep ? info.translation[i] : 0;
-      global[i] +=   local[0] * info.matrix[3 * i]
-		   + local[1] * info.matrix[3 * i + 1]
-		   + local[2] * info.matrix[3 * i + 2];
-   }
 }
 
 //______________________________________________________________________________
@@ -287,3 +297,4 @@ bool FWGeometry::VersionInfo::haveExtraDet(const char* det) const
    
    return (extraDetectors && extraDetectors->FindObject(det)) ? true : false;
 }
+
