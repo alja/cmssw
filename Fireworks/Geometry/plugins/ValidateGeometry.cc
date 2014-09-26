@@ -314,7 +314,7 @@ ValidateGeometry::validateRPCGeometry(const int regionNumber, const char* region
 
         compareTransform(gp, matrix);
 
-        const float* shape = fwGeometry_.getShapePars(rpcDetId.rawId());
+        const float* shape = 0; // amt fwGeometry_.getShapePars(rpcDetId.rawId());
 
         if ( ! shape )
         {
@@ -396,7 +396,7 @@ ValidateGeometry::validateDTChamberGeometry()
 
       compareTransform(gp, matrix);
 
-      const float* shape = fwGeometry_.getShapePars(chId.rawId());
+      const float* shape = 0; // amt fwGeometry_.getShapePars(chId.rawId());
 
       if ( ! shape )
       {
@@ -444,7 +444,7 @@ ValidateGeometry::validateDTLayerGeometry()
 
       compareTransform(gp, matrix);
 
-      const float* shape = fwGeometry_.getShapePars(layerId.rawId());
+      const float* shape = 0; //fwGeometry_.getShapePars(layerId.rawId());
 
       if ( ! shape )
       {
@@ -529,7 +529,7 @@ ValidateGeometry::validateCSChamberGeometry(const int endcap, const char* detnam
 
       compareTransform(gp, matrix);
 
-      const float* shape = fwGeometry_.getShapePars(detId.rawId());
+      const float* shape = 0; //fwGeometry_.getShapePars(detId.rawId());
 
       if ( ! shape )
       {
@@ -587,7 +587,7 @@ ValidateGeometry::validateCSCLayerGeometry(const int endcap, const char* detname
 
       compareTransform(gp, matrix);
       
-      const float* shape = fwGeometry_.getShapePars(detId.rawId());
+      const float* shape = 0; // AMTfwGeometry_.getShapePars(detId.rawId());
 
       if ( ! shape )
       {
@@ -892,7 +892,7 @@ ValidateGeometry::validateTrackerGeometry(const TrackerGeometry::DetContainer& d
 
     compareTransform(gp, matrix);
 
-    const float* shape = fwGeometry_.getShapePars(rawId);
+    const float* shape = 0; // amt fwGeometry_.getShapePars(rawId);
 
     if ( ! shape )
     {
