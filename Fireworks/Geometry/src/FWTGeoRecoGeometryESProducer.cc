@@ -76,8 +76,9 @@ void AddLeafNode(TGeoVolume* mother, TGeoVolume* daughter, const char* name, TGe
 {
    int n = mother->GetNdaughters();
    mother->AddNode(daughter, 1, mtx);
-   mother->GetNode(n)->SetName(name);
-   mother->GetNode(n)->SetTitle(Form("%d", rawid));
+   TGeoNode* node = mother->GetNode(n);
+   node->SetName(name);
+   node->SetTitle(Form("%u", rawid));
 }
 
   /** Create TGeo transformation of GeomDet */
@@ -263,6 +264,7 @@ FWTGeoRecoGeometryESProducer::produce( const FWTGeoRecoGeometryRecord& record )
    
    addPixelBarrelGeometry();
 
+ 
    addPixelForwardGeometry();
    addTIBGeometry();
    addTIDGeometry();
@@ -273,7 +275,6 @@ FWTGeoRecoGeometryESProducer::produce( const FWTGeoRecoGeometryRecord& record )
    addRPCGeometry();
    addGEMGeometry();
 
- 
    if (0) {
    addEcalCaloGeometry();
    
@@ -287,9 +288,6 @@ FWTGeoRecoGeometryESProducer::produce( const FWTGeoRecoGeometryRecord& record )
 
   printf("AMT tracker topologies %lu volumes %d nodes %d \n",  m_topology.size(),
           gGeoManager->GetListOfShapes()->GetLast(), gGeoManager->GetNNodes());
-
-   for (std::map<DMtopo, DMids>::iterator t =  m_topology.begin(); t != m_topology.end(); ++t)
-       printf("num raws = %lu \n", t->second.size());
 
    return m_fwGeometry;
 }
