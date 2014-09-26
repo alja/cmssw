@@ -11,6 +11,8 @@
 #include "TEveCompound.h"
 #include "TGeoArb8.h"
 #include "TEveBox.h"
+#include "TGeoNode.h";
+#include "TGeoMatrix.h";
 
 #include "Fireworks/Core/interface/FWProxyBuilderBase.h"
 #include "Fireworks/Core/interface/FWEventItem.h"
@@ -36,15 +38,9 @@ namespace
 			      localPos[0] - width,  length,  thickness,
 			      localPos[0] + width,  length,  thickness,
 			      localPos[0] + width, -length,  thickness };
-    
-    double array[16] = { info.matrix[0], info.matrix[3], info.matrix[6], 0.,
-			 info.matrix[1], info.matrix[4], info.matrix[7], 0.,
-			 info.matrix[2], info.matrix[5], info.matrix[8], 0.,
-			 info.translation[0], info.translation[1], info.translation[2], 1.
-    };
-    
+
     shape->SetVertices( vtx );
-    shape->SetTransMatrix( array );
+    shape->SetTransMatrix( *info.node->GetMatrix() );
     shape->SetDrawFrame(false);
     shape->SetMainTransparency( 75 );
   }

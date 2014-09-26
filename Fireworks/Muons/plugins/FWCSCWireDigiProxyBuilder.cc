@@ -10,6 +10,7 @@
 //         Created:  Sun Jan  6 23:57:00 EST 2008
 //
 
+#include "TGeoArb8.h"
 #include "TEveStraightLineSet.h"
 #include "TEveCompound.h"
 
@@ -132,11 +133,10 @@ FWCSCWireDigiProxyBuilder::build(const FWEventItem* iItem, TEveElementList* prod
       continue;
     }
 
-    const float* shape = geom->getShapePars( rawid );
-
-    float length = shape[4];
-    float topWidth = shape[2];
-    float bottomWidth = shape[1];
+    TGeoTrap* trap = dynamic_cast<TGeoTrap*>(geom->getShape(rawid));
+    float length = trap->GetH1();
+    float topWidth =  trap->GetTl1();
+    float bottomWidth = trap->GetBl1();
     
     // NOTE: do not use parameters right now: need to sort out what is finally needed 
     //const float* parameters = iItem->getGeom()->getParameters( rawid );

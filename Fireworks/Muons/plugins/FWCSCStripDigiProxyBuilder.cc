@@ -10,6 +10,7 @@
 //         Created:  Sun Jan  6 23:57:00 EST 2008
 //
 
+#include "TGeoArb8.h"
 #include "TEveStraightLineSet.h"
 #include "TEveCompound.h"
 
@@ -68,9 +69,8 @@ FWCSCStripDigiProxyBuilder::build(const FWEventItem* iItem, TEveElementList* pro
 	 continue;
       }
      
-      const float* shape = geom->getShapePars( rawid );
-      float length = shape[4];
-
+      TGeoTrap* trap = dynamic_cast<TGeoTrap*> (geom->getShape(rawid));
+      float length = trap->GetH1();
       const float* parameters = geom->getParameters( rawid );
 
       float yAxisOrientation = parameters[0];
