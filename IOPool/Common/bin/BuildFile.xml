@@ -32,3 +32,10 @@
   <use   name="FWCore/Catalog"/>
   <use   name="FWCore/ParameterSet"/>
 </bin>
+<bin   name="globalTagDump" file="GlobalTagDump.cc,">
+  <use   name="rootcore"/>
+  <use   name="DataFormats/Provenance"/>
+  <use   name="FWCore/ParameterSet"/>
+  <use   name="FWCore/ServiceRegistry"/>
+  <use   name="FWCore/Utilities"/>
+</bin>
