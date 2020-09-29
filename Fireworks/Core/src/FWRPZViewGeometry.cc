@@ -554,13 +554,19 @@ void FWRPZViewGeometry::showGEM(bool show) {
               maxRoll = 12;
 
             for (Int_t iRoll = GEMDetId::minRollId; iRoll <= maxRoll; ++iRoll) {
-              GEMDetId id(iRegion, iRing, iStation, iLayer, iChamber, iRoll);
-              TEveGeoShape* shape = m_geom->getEveShape(id.rawId());
-              if (shape) {
-                addToCompound(shape, kFWMuonEndcapLineColorIndex);
-                m_GEMElements->AddElement(shape);
-                gEve->AddToListTree(shape, true);
-              }
+               try {
+                  GEMDetId id(iRegion, iRing, iStation, iLayer, iChamber, iRoll);
+                  TEveGeoShape* shape = m_geom->getEveShape(id.rawId());
+                  if (shape) {
+                     addToCompound(shape, kFWMuonEndcapLineColorIndex);
+                     m_GEMElements->AddElement(shape);
+                     gEve->AddToListTree(shape, true);
+                  }
+               }
+               catch (cms::Exception& e)
+               {
+                  std::cout << "FWRPZViewGeometry::showGEM" << e<< std::endl;
+               }
             }
           }
         }
