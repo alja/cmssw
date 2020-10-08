@@ -200,48 +200,56 @@ FW3DViewGeometry::showMuonEndcap( bool showMuonEndcap )
             }
       	 }
       }
-      // hardcoded gem and me0; need to find better way for different gem geometries
-      for( Int_t iRegion = GEMDetId::minRegionId; iRegion <= GEMDetId::maxRegionId; iRegion= iRegion+2){
-	TEveElementList* teEndcap = nullptr;
-	if( iRegion == 1 )
-	  teEndcap = new TEveElementList( "GEM Forward" );
-	else
-	  teEndcap = new TEveElementList( "GEM Backward" );
-	m_muonEndcapElements->AddElement( teEndcap );
+	  
+	// GEM  
+      for (Int_t iRegion = GEMDetId::minRegionId; iRegion <= GEMDetId::maxRegionId; iRegion++) {
+       TEveElementList* teEndcap = nullptr;
+     
+       teEndcap = new TEveElementList(Form("GEM Reg=%d", iRegion));
+       m_muonEndcapElements->AddElement(teEndcap);
 
-	int mxSt = m_geom->versionInfo().haveExtraDet("GE2") ? GEMDetId::maxStationId :1; 
 
-	for( Int_t iStation = GEMDetId::minStationId; iStation <= mxSt; ++iStation ){
-	  std::ostringstream s; s << "Station" << iStation;
-	  TEveElementList* cStation  = new TEveElementList( s.str().c_str() );
-	  teEndcap->AddElement( cStation );
-	      
-	  Int_t iRing = 1;
-	  for( Int_t iLayer = GEMDetId::minLayerId; iLayer <= GEMDetId::maxLayerId ; ++iLayer ){
-	    int maxChamber = 36;
-	    if (iStation >= 2) maxChamber = 18;
+       for (Int_t iStation = GEMDetId::minStationId; iStation <= GEMDetId::maxStationId; ++iStation) {
+          std::ostringstream s;
+          s << "Station" << iStation;
+          TEveElementList* cStation = new TEveElementList(s.str().c_str());
+          teEndcap->AddElement(cStation);
 
-	    for( Int_t iChamber = 1; iChamber <= maxChamber; ++iChamber ){
-	      int maxRoll = iChamber%2 ? 9:10;
-	      if (iStation == 2) maxRoll = 8;
-	      if (iStation == 3) maxRoll = 12;
+          //Int_t iRing = 1;
+          for (Int_t iLayer = GEMDetId::minLayerId; iLayer <= GEMDetId::maxLayerId; ++iLayer) {
+             int maxChamber = GEMDetId::maxChamberId;
+             std::ostringstream sl;
+             sl << "Layer" << iLayer;
+             TEveElementList* elayer = new TEveElementList(sl.str().c_str());
+             cStation->AddElement(elayer);
+          
+          
+             for (Int_t iChamber = 1; iChamber <= maxChamber; ++iChamber) {
+                int maxRoll =  GEMDetId::maxRollId;
+            
+                std::ostringstream cl;
+                cl << "Chamber" << iChamber;
+                TEveElementList* cha = new TEveElementList(cl.str().c_str());
+                elayer->AddElement(cha);
+          
 
-	      for (Int_t iRoll = GEMDetId::minRollId; iRoll <= maxRoll ; ++iRoll ){
-		GEMDetId id( iRegion, iRing, iStation, iLayer, iChamber, iRoll );
-		TEveGeoShape* shape = m_geom->getEveShape( id.rawId() );
-		if (shape){
-		  shape->SetTitle(TString::Format("GEM: , Rng=%d, St=%d, Ch=%d Rl=%d\ndet-id=%u",
-						  iRing, iStation, iChamber, iRoll, id.rawId()));
- 	  	            
-		  cStation->AddElement( shape );
-		  addToCompound(shape, kFWMuonEndcapLineColorIndex);
-		}
-	      }
-	    }
-	  }
-	}
-      }
+                for (int iRing = 1; iRing <= GEMDetId::maxRingId; ++iRing) {
+                   for (Int_t iRoll = GEMDetId::minRollId; iRoll <= maxRoll; ++iRoll) {
+                      GEMDetId id(iRegion, iRing, iStation, iLayer, iChamber, iRoll);
+                      TEveGeoShape* shape = m_geom->getEveShape(id.rawId());
+                      if (shape) {
+                         shape->SetTitle(TString::Format(
+                                                         "GEM: , Rng=%d, St=%d, Ch=%d Rl=%d\ndet-id=%u", iRing, iStation, iChamber, iRoll, id.rawId()));
 
+                         cha->AddElement(shape);
+                         addToCompound(shape, kFWMuonEndcapLineColorIndex);
+                      }
+                   }
+                }
+             }
+          }
+       }
+	 
       // adding me0
       if (m_geom->versionInfo().haveExtraDet("ME0") ){
 	for( Int_t iRegion = ME0DetId::minRegionId; iRegion <= ME0DetId::maxRegionId; iRegion= iRegion+2 ){
