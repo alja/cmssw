@@ -100,20 +100,21 @@ std::shared_ptr<FWParameterSetterBase> FWParameterSetterBase::makeSetterFor(FWPa
     //        different type of FW*Parameter.
     if (name == "FWGenericParameter<bool>")
       name = "FWBoolParameterSetter";
-    else if (name == "FWGenericParameter<std::string>")
-      name = "FWStringParameterSetter";
-    else if (name == "FWGenericParameter<std::basic_string<char> >")
-      name = "FWStringParameterSetter";
     else if (name == "FWGenericParameterWithRange<double>")
       name = "FWDoubleParameterSetter";
     else if (name == "FWGenericParameterWithRange<long int>")
       name = "FWLongParameterSetter";
     else if (name == "FWGenericParameterWithRange<long>")
       name = "FWLongParameterSetter";
-    else
+    else if ((name.rfind("FWGenericParameter<std::basic_string<char", 0) == 0) || name == "FWGenericParameter<std::string>")
+      name = "FWStringParameterSetter";
+    else {
       name += "Setter";
-
+      fwLog(fwlog::kWarning) << "can't find setter type for "<< iParam->name() << ", guessing to " << name << "\n";
+    }
     edm::TypeWithDict setterClass(edm::TypeWithDict::byName(name));
+
+    // AMT this check does not catch unmatched type
     if (setterClass == edm::TypeWithDict()) {
       fwLog(fwlog::kError) << " the type " << name << " has no dictionary" << std::endl;
     }
