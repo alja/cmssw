@@ -69,13 +69,13 @@ void FWPhase2TrackerCluster1DProxyBuilder::build(const FWEventItem* iItem,
         continue;
       }
 
-      float halfWidth = shape[2];
+      float halfLength = shape[2];
       float pitchSecond = pars[1];
 
       // point
       //
       float localPoint[3] = {fireworks::phase2PixelLocalX((*itc).center(), pars, shape),
-                            float( (*itc).column() + 0.5 ) * pitchSecond - halfWidth, // ??? + 0.5
+                            float( (*itc).column() + 0.5 ) * pitchSecond - halfLength, // ??? + 0.5
                              0.0};
 
       float globalPoint[3];
@@ -89,10 +89,10 @@ void FWPhase2TrackerCluster1DProxyBuilder::build(const FWEventItem* iItem,
       // line
       //
       float localPointBeg[3] = {fireworks::phase2PixelLocalX((*itc).center(), pars, shape),
-                                halfWidth,
+                                halfLength,
                                 0.0};
       float localPointEnd[3] = {fireworks::phase2PixelLocalX((*itc).center(), pars, shape),
-                                -halfWidth,
+                                -halfLength,
                                 0.0};
 
       float globalPointBeg[3];
