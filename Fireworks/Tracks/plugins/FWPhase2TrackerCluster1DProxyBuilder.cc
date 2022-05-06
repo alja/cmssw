@@ -62,14 +62,20 @@ void FWPhase2TrackerCluster1DProxyBuilder::build(const FWEventItem* iItem,
       product->AddElement(itemHolder);
 
       TEvePointSet* pointSet = new TEvePointSet;
+      TEveStraightLineSet* lineSet = new TEveStraightLineSet;
 
       if (!geom->contains(id)) {
         fwLog(fwlog::kWarning) << "failed get geometry of Phase2TrackerCluster1D with detid: " << id << std::endl;
         continue;
       }
 
+      float halfWidth = shape[2];
+      float pitchSecond = pars[1];
+
+      // point
+      //
       float localPoint[3] = {fireworks::phase2PixelLocalX((*itc).center(), pars, shape),
-                             fireworks::phase2PixelLocalY((*itc).column(), pars, shape),
+                            float( (*itc).column() + 0.5 ) * pitchSecond - halfWidth, // ??? + 0.5
                              0.0};
 
       float globalPoint[3];
@@ -78,6 +84,24 @@ void FWPhase2TrackerCluster1DProxyBuilder::build(const FWEventItem* iItem,
       pointSet->SetNextPoint(globalPoint[0], globalPoint[1], globalPoint[2]);
 
       setupAddElement(pointSet, itemHolder);
+
+
+      // line
+      //
+      float localPointBeg[3] = {fireworks::phase2PixelLocalX((*itc).center(), pars, shape),
+                                halfWidth,
+                                0.0};
+      float localPointEnd[3] = {fireworks::phase2PixelLocalX((*itc).center(), pars, shape),
+                                -halfWidth,
+                                0.0};
+
+      float globalPointBeg[3];
+      float globalPointEnd[3];
+      geom->localToGlobal(id, localPointBeg, globalPointBeg);
+      geom->localToGlobal(id, localPointEnd, globalPointEnd);
+
+      lineSet->AddLine(globalPointBeg, globalPointEnd);
+      setupAddElement(lineSet, itemHolder);
     }
   }
 }
